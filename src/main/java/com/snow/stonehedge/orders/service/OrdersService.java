@@ -15,6 +15,11 @@ public class OrdersService {
     public long submitOrder(OrderRequest orderRequest) {
         long orderId = Data.GET_ORDER_ID();
         Data.ORDER_LIST.add(new Order(orderId, orderRequest));
+        if (orderRequest.getBuyOrSell() == BuyOrSell.BUY) {
+            Data.QUOTES.get(orderRequest.getSymbol()).getBook().increaseBids(orderRequest.getPrice(), orderRequest.getQuantity());
+        } else {
+            Data.QUOTES.get(orderRequest.getSymbol()).getBook().increaseAsks(orderRequest.getPrice(), orderRequest.getQuantity());
+        }
         return orderId;
     }
 

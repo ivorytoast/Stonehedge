@@ -17,12 +17,6 @@ public class Data {
 
     static {
         QUOTES.put("spx.us", new Quote("spx.us", new Book()));
-        QUOTES.get("spx.us").getBook().increaseAsks(3000.0, 500);
-        QUOTES.get("spx.us").getBook().increaseBids(3000.0, 500);
-        QUOTES.get("spx.us").getBook().increaseAsks(3002.0, 200);
-        QUOTES.get("spx.us").getBook().increaseBids(2998.0, 200);
-        QUOTES.get("spx.us").getBook().increaseAsks(3001.0, 200);
-        QUOTES.get("spx.us").getBook().increaseBids(2999.0, 200);
         QUOTES.put("amzn.q", new Quote("amzn.q", new Book()));
         QUOTES.put("c.n", new Quote("c.n", new Book()));
     }
@@ -31,12 +25,6 @@ public class Data {
         ORDER_LIST.clear();
         QUOTES.clear();
         QUOTES.put("spx.us", new Quote("spx.us", new Book()));
-        QUOTES.get("spx.us").getBook().increaseAsks(3000.0, 500);
-        QUOTES.get("spx.us").getBook().increaseBids(3000.0, 500);
-        QUOTES.get("spx.us").getBook().increaseAsks(3002.0, 200);
-        QUOTES.get("spx.us").getBook().increaseBids(2998.0, 200);
-        QUOTES.get("spx.us").getBook().increaseAsks(3001.0, 200);
-        QUOTES.get("spx.us").getBook().increaseBids(2999.0, 200);
         QUOTES.put("amzn.q", new Quote("amzn.q", new Book()));
         QUOTES.put("c.n", new Quote("c.n", new Book()));
     }

@@ -26,7 +26,7 @@ class StonehedgeApplicationTests {
         Price_Updates_Correctly_On_Buy_Request = new OrderRequest(BuyOrSell.BUY, 500, "spx.us", FillType.MARKET, 3000.0);
         Price_Updates_Correctly_On_Sell_Request = new OrderRequest(BuyOrSell.SELL, 500, "spx.us", FillType.MARKET, 3000.0);
 
-        Can_Fill_Buy_Request = new OrderRequest(BuyOrSell.BUY, 650, "spx.us", FillType.MARKET, 3000.0);
+        Can_Fill_Buy_Request = new OrderRequest(BuyOrSell.BUY, 500, "spx.us", FillType.MARKET, 3000.0);
         Cannot_Fill_Buy_Request = new OrderRequest(BuyOrSell.BUY, 3000, "spx.us", FillType.MARKET, 3000.0);
 
         Can_Fill_Sell_Request = new OrderRequest(BuyOrSell.SELL, 650, "spx.us", FillType.MARKET, 3000.0);
@@ -51,15 +51,17 @@ class StonehedgeApplicationTests {
 
     @Test
     void Price_Updates_Correctly_On_Sell() {
-        assertEquals(3000.00, Data.QUOTES.get("spx.us").getBook().getCurrentPrice(), "The start price should 3000.0");
+        assertEquals(0.0, Data.QUOTES.get("spx.us").getBook().getCurrentPrice(), "The start price should 0.0");
         ordersService.submitOrder(Price_Updates_Correctly_On_Sell_Request);
+        ordersService.submitOrder(Can_Fill_Buy_Request);
 
         List<OrderResponse> response = ordersService.processOrders();
 
-        assertEquals(1, response.size(),"Make sure the deal processed without an error");
+        assertEquals(2, response.size(),"Make sure the deal processed without an error");
         assertEquals(response.get(0).getSuccessOrFailure(), SuccessOrFailure.SUCCESS, "Make sure the first deal filled successfully");
-        assertEquals(0, Data.QUOTES.get("spx.us").getBook().getBids().get(3000.0), "The 3000.0 asks should be wiped out");
-        assertEquals(2999.50, Data.QUOTES.get("spx.us").getBook().getCurrentPrice(), "The current price should be 2999.5");
+        assertEquals(0, Data.QUOTES.get("spx.us").getBook().getBids().get(3000.0), "The 3000.0 bids should be wiped out");
+        assertEquals(0, Data.QUOTES.get("spx.us").getBook().getAsks().get(3000.0), "The 3000.0 asks should be wiped out");
+        assertEquals(3000.0, Data.QUOTES.get("spx.us").getBook().getCurrentPrice(), "The current price should be 2999.5");
         assertEquals(new BigDecimal("3000.00"), response.get(0).getFillPrice(), "The average fill price should 3000.00");
     }
 
