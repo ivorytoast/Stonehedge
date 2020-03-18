@@ -2,6 +2,7 @@ package com.snow.stonehedge.marketdata.controller;
 
 import com.snow.stonehedge.marketdata.model.Book;
 import com.snow.stonehedge.marketdata.model.Quote;
+import com.snow.stonehedge.orders.model.Order;
 import com.snow.stonehedge.shared.Data;
 import lombok.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +17,11 @@ public class MarketDataController {
     @GetMapping("/v1/realtime/all")
     public List<Quote> getAllQuotes() {
         return new ArrayList<>(Data.QUOTES.values());
+    }
+
+    @GetMapping("/v1/realtime/orders/all")
+    public List<Order> getAllOrders() {
+        return new ArrayList<>(Data.ORDER_LIST);
     }
 
     @GetMapping("/v1/realtime/{symbol}")

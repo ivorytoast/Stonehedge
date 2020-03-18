@@ -6,7 +6,9 @@ import com.snow.stonehedge.shared.Data;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 public class OrdersService {
 
@@ -28,17 +30,33 @@ public class OrdersService {
      */
     public List<OrderResponse> processOrders() {
         List<OrderResponse> orderResponseList = new ArrayList<>();
+        Queue<Order> newOrderList = new LinkedList<>();
         Data.ORDER_LIST.forEach(order -> {
             BigDecimal fillPrice = calculateFillPrice(order);
-            orderResponseList.add(new OrderResponse(
-                order.getId(),
-                fillPrice.equals(BigDecimal.valueOf(-1)) ? SuccessOrFailure.FAILURE : SuccessOrFailure.SUCCESS,
-                order.getOrderRequest().getBuyOrSell(),
-                order.getOrderRequest().getSymbol(),
-                order.getOrderRequest().getQuantity(),
-                fillPrice)
-            );
+            SuccessOrFailure successOrFailure = fillPrice.equals(BigDecimal.valueOf(-1)) ? SuccessOrFailure.FAILURE : SuccessOrFailure.SUCCESS;
+            if (order.getOrderRequest().getTimeLimit() >= 5 || successOrFailure == SuccessOrFailure.SUCCESS) {
+                orderResponseList.add(new OrderResponse(
+                    order.getId(),
+                    successOrFailure,
+                    order.getOrderRequest().getBuyOrSell(),
+                    order.getOrderRequest().getSymbol(),
+                    order.getOrderRequest().getQuantity(),
+                    fillPrice)
+                );
+                if (order.getOrderRequest().getTimeLimit() >= 5) {
+                    if (order.getOrderRequest().getBuyOrSell() == BuyOrSell.BUY) {
+                        Data.QUOTES.get(order.getOrderRequest().getSymbol()).getBook().decreaseBids(order.getOrderRequest().getPrice(), order.getOrderRequest().getQuantity());
+                    } else {
+                        Data.QUOTES.get(order.getOrderRequest().getSymbol()).getBook().decreaseAsks(order.getOrderRequest().getPrice(), order.getOrderRequest().getQuantity());
+                    }
+                }
+            } else {
+                newOrderList.add(order);
+            }
+            order.getOrderRequest().addOneToTimeLimit();
         });
+        Data.ORDER_LIST.clear();
+        Data.ORDER_LIST = newOrderList;
         return orderResponseList;
     }
 

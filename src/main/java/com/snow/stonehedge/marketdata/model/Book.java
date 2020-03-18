@@ -32,9 +32,10 @@ public class Book {
                 .filter(bid -> bid.getValue() != 0)
                 .findFirst()
                 .map(Map.Entry::getKey);
-        if (bestAsk.isEmpty()) return;
-        if (bestBid.isEmpty()) return;
-        currentPrice = (bestAsk.get() + bestBid.get()) / 2.0;
+        if (bestAsk.isEmpty() && bestBid.isEmpty()) return;
+        if (bestBid.isEmpty()) currentPrice = bestAsk.get();
+        if (bestAsk.isEmpty()) currentPrice = bestBid.get();
+        if (bestAsk.isPresent() && bestBid.isPresent()) currentPrice = (bestAsk.get() + bestBid.get()) / 2.0;
     }
 
     public void increaseBids(double price, long increaseBy) {
