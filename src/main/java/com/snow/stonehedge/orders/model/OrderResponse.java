@@ -17,6 +17,7 @@ public class OrderResponse {
     private String symbol;
     private long quantity;
     private BigDecimal fillPrice;
+    private FillStatus fillStatus;
 
     public OrderResponse() {
         tradeId = -1;
@@ -25,6 +26,7 @@ public class OrderResponse {
         symbol = "";
         quantity = -1;
         fillPrice = BigDecimal.valueOf(-1.0);
+        fillStatus = FillStatus.NONE;
     }
 
 }

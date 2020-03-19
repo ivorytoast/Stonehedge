@@ -16,6 +16,7 @@ public class OrderRequest {
     private String symbol;
     private FillType fillType;
     private double price;
+    private long amountThatHasBeenFilled = 0;
     private long timeLimit = 1;
 
     public OrderRequest(BuyOrSell buyOrSell, long quantity, String symbol, FillType fillType, double price) {
@@ -28,5 +29,9 @@ public class OrderRequest {
 
     public void addOneToTimeLimit() {
         timeLimit++;
+    }
+
+    public void updateAmountThatHasBeenFilled(long amount) {
+        this.amountThatHasBeenFilled += amount;
     }
 }
