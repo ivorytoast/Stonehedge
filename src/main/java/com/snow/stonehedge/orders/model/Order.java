@@ -14,7 +14,6 @@ public class Order {
     public Order(long id, OrderRequest orderRequest) {
         this.id = id;
         this.orderRequest = orderRequest;
-        this.hasBeenFilled = false;
     }
 
 }

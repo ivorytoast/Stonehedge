@@ -1,103 +1,74 @@
 package com.snow.stonehedge.marketdata.model;
 
+import com.snow.stonehedge.orders.model.BuyOrSell;
+import com.snow.stonehedge.orders.model.Order;
+import com.snow.stonehedge.orders.model.OrderRequest;
 import lombok.*;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.TreeMap;
+import java.util.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
 public class Book {
 
-    private TreeMap<Double, Long> bids;
-    private TreeMap<Double, Long> asks;
+    private TreeMap<Double, Map<Long, Order>> bids;
+    private TreeMap<Double, Map<Long, Order>> asks;
+    private OrderRequest mostRecentTrade;
     private long totalNumberOfBids;
     private long totalNumberOfAsks;
-    private double currentPrice;
 
     public Book() {
         bids = new TreeMap<>();
         asks = new TreeMap<>();
-        updateCurrentPrice();
+        mostRecentTrade = new OrderRequest();
     }
 
-    public void updateCurrentPrice() {
-        Optional<Double> bestAsk = asks.entrySet().stream()
-                .filter(ask -> ask.getValue() != 0)
-                .findFirst()
-                .map(Map.Entry::getKey);
-        Optional<Double> bestBid = bids.descendingMap().entrySet().stream()
-                .filter(bid -> bid.getValue() != 0)
-                .findFirst()
-                .map(Map.Entry::getKey);
-        if (bestAsk.isEmpty()) return;
-        if (bestBid.isEmpty()) return;
-        currentPrice = (bestAsk.get() + bestBid.get()) / 2.0;
-    }
-
-    public void increaseBids(double price, long increaseBy) {
-        if (bids.containsKey(price)) {
-            bids.put(price, bids.get(price) + increaseBy);
+    public void addOrder(Order order) {
+        double price = order.getOrderRequest().getPrice();
+        if (order.getOrderRequest().getBuyOrSell() == BuyOrSell.BUY) {
+            if (this.bids.containsKey(price)) {
+                Map<Long, Order> values = this.bids.get(price);
+                values.put(order.getId(), order);
+                this.bids.put(price, values);
+            } else {
+                Map<Long, Order> values = new HashMap<>();
+                values.put(order.getId(), order);
+                this.bids.put(price, values);
+            }
+            this.totalNumberOfBids += order.getOrderRequest().getQuantity();
         } else {
-            bids.put(price, increaseBy);
-        }
-        totalNumberOfBids += increaseBy;
-        updateCurrentPrice();
-    }
-
-    public void increaseAsks(double price, long increaseBy) {
-        if (asks.containsKey(price)) {
-            asks.put(price, asks.get(price) + increaseBy);
-        } else {
-            asks.put(price, increaseBy);
-        }
-        totalNumberOfAsks += increaseBy;
-        updateCurrentPrice();
-    }
-
-    @SneakyThrows
-    public void decreaseBids(double price, long decreaseBy) {
-        if (bids.containsKey(price)) {
-            bids.put(price, bids.get(price) - decreaseBy);
-            totalNumberOfBids -= decreaseBy;
-            updateCurrentPrice();
-        } else {
-            throw new Exception("Can't remove something that is not there!");
+            if (this.asks.containsKey(price)) {
+                Map<Long, Order> values = this.asks.get(price);
+                values.put(order.getId(), order);
+                this.asks.put(price, values);
+            } else {
+                Map<Long, Order> values = new HashMap<>();
+                values.put(order.getId(), order);
+                this.asks.put(price, values);
+            }
+            this.totalNumberOfAsks += order.getOrderRequest().getQuantity();
         }
     }
 
-    @SneakyThrows
-    public void decreaseBidsToZero(double price) {
-        if (bids.containsKey(price)) {
-            totalNumberOfBids -= bids.get(price);
-            bids.put(price, 0L);
-            updateCurrentPrice();
+    public void updateOrderFillAmount(Order order, long amount) {
+        order.getOrderRequest().updateAmountThatHasBeenFilled(amount);
+        if (order.getOrderRequest().getBuyOrSell() == BuyOrSell.BUY) {
+            this.totalNumberOfBids -= amount;
         } else {
-            throw new Exception("Can't remove something that is not there!");
+            this.totalNumberOfAsks -= amount;
         }
     }
 
-    @SneakyThrows
-    public void decreaseAsks(double price, long decreaseBy) {
-        if (asks.containsKey(price)) {
-            asks.put(price, asks.get(price) - decreaseBy);
-            totalNumberOfAsks -= decreaseBy;
-            updateCurrentPrice();
+    public void removeOrder(Order order) {
+        double price = order.getOrderRequest().getPrice();
+        long orderID = order.getId();
+        if (order.getOrderRequest().getBuyOrSell() == BuyOrSell.BUY) {
+            Map<Long, Order> values = this.bids.get(price);
+            values.remove(orderID);
         } else {
-            throw new Exception("Can't remove something that is not there!");
-        }
-    }
-
-    @SneakyThrows
-    public void decreaseAsksToZero(double price) {
-        if (asks.containsKey(price)) {
-            totalNumberOfAsks -= asks.get(price);
-            asks.put(price, 0L);
-            updateCurrentPrice();
-        } else {
-            throw new Exception("Can't remove something that is not there!");
+            Map<Long, Order> values = this.asks.get(price);
+            values.remove(orderID);
         }
     }
 
