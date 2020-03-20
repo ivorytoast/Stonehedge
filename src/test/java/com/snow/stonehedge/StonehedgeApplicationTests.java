@@ -41,6 +41,8 @@ class StonehedgeApplicationTests {
         ordersService.submitOrder(Cannot_Fill_Sell_Request);
 
         List<OrderResponse> response = ordersService.processOrders();
+
+        System.out.println("CHA");
     }
 
     @Test
@@ -49,6 +51,8 @@ class StonehedgeApplicationTests {
         ordersService.submitOrder(Can_Fill_Sell_Request);
 
         List<OrderResponse> response = ordersService.processOrders();
+
+        System.out.println("HELLO");
     }
 
 }
