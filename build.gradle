@@ -6,7 +6,7 @@ plugins {
 
 group = 'com.snow'
 version = '1.0'
-sourceCompatibility = '11'
+sourceCompatibility = '8'
 
 configurations {
     developmentOnly
