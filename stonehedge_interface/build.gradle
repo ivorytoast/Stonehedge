@@ -13,7 +13,7 @@ node {
   download = true
 }
 
-jar.dependsOn 'npm_run_build'
+jar.dependsOn 'npm_build'
 
 jar {
   from 'dist/stonehedge_interface' into 'static'
