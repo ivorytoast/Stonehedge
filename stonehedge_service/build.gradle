@@ -31,8 +31,6 @@ dependencies {
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
     implementation 'org.jetbrains:annotations:15.0'
-
-    implementation(project(':stonehedge_interface'))
 }
 
 test {
