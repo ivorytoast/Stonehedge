@@ -1,1 +1,3 @@
 rootProject.name = 'stonehedge'
+
+include 'stonehedge_interface', 'stonehedge_service'
