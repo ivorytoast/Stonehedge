@@ -11,6 +11,8 @@ public class Order {
     private OrderRequest orderRequest;
     private boolean hasBeenFilled;
 
+    public Order() {}
+
     public Order(long id, OrderRequest orderRequest) {
         this.id = id;
         this.orderRequest = orderRequest;

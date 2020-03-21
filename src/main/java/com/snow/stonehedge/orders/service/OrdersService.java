@@ -1,7 +1,6 @@
 package com.snow.stonehedge.orders.service;
 
 import com.snow.stonehedge.marketdata.model.Book;
-import com.snow.stonehedge.orders.logic.OrdersLogic;
 import com.snow.stonehedge.orders.model.*;
 import com.snow.stonehedge.shared.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +15,13 @@ public class OrdersService {
         long orderID = Data.GET_ORDER_ID();
         Order newOrder = new Order(orderID, orderRequest);
         Data.ORDER_LIST.add(newOrder);
-        Data.QUOTES.get(orderRequest.getSymbol()).getBook().addOrder(newOrder);
-        return orderID;
+        if (Data.QUOTES.containsKey(orderRequest.getSymbol())) {
+            Data.QUOTES.get(orderRequest.getSymbol()).getBook().addOrder(newOrder);
+            return orderID;
+        } else {
+            log.error("Symbol does not exist on the exchange!");
+            return -1;
+        }
     }
 
     // TODO -- YOU NEED TO UPDATE MOST RECENT TRADE
@@ -49,6 +53,7 @@ public class OrdersService {
                     fillStatus = FillStatus.NONE;
                     book.removeOrder(order);
                     book.updateOrderFillAmount(order, order.getOrderRequest().getQuantity());
+                    order.getOrderRequest().setFillPrice(0.0);
                 }
                 orderResponseList.add(new OrderResponse(
                     order.getId(),
@@ -56,7 +61,7 @@ public class OrdersService {
                     order.getOrderRequest().getBuyOrSell(),
                     order.getOrderRequest().getSymbol(),
                     order.getOrderRequest().getQuantity(),
-                    BigDecimal.valueOf(534.0),
+                    BigDecimal.valueOf(order.getOrderRequest().getFillPrice()),
                     fillStatus)
                 );
             } else {
@@ -66,6 +71,7 @@ public class OrdersService {
         }
         Data.ORDER_LIST.clear();
         Data.ORDER_LIST = carryOverOrderList;
+        Data.HISTORICAL_ORDERS.addAll(orderResponseList);
         return orderResponseList;
     }
 
@@ -87,8 +93,9 @@ public class OrdersService {
         TreeMap<Double, Map<Long, Order>> asks = Data.QUOTES.get(order.getOrderRequest().getSymbol()).getBook().getAsks();
         // Get all the prices that the underlier has that MIGHT have stock
         Set<Double> keys = asks.keySet();
+        for (double key : keys) System.out.print(key + ", ");
         for (double askPrice : keys) {
-            log.debug("The current ask price we are looking at is {}", askPrice);
+            log.info("The current ask price we are looking at is {}", askPrice);
             // For each price, get each order
             for (Order ask : asks.get(askPrice).values()) {
                 // Get the amount that is present
@@ -101,17 +108,23 @@ public class OrdersService {
                     book.removeOrder(ask);
                     book.updateOrderFillAmount(order, amountTryingToBeFilled);
                     book.updateOrderFillAmount(ask, amountTryingToBeFilled);
+                    order.getOrderRequest().addToTotalDollarAmountFilled(askPrice * amountTryingToBeFilled);
+                    ask.getOrderRequest().addToTotalDollarAmountFilled(askPrice * amountTryingToBeFilled);
                 // If the amount requested is less than what can be provided, completely fill requested order. Remove the requested order. Leave the other order be.
                 } else if (amountTryingToBeFilled < askQuantity) {
                     // If not, fill what you can
                     book.removeOrder(order);
                     book.updateOrderFillAmount(order, amountTryingToBeFilled);
                     book.updateOrderFillAmount(ask, amountTryingToBeFilled);
+                    order.getOrderRequest().addToTotalDollarAmountFilled(askPrice * amountTryingToBeFilled);
+                    ask.getOrderRequest().addToTotalDollarAmountFilled(askPrice * amountTryingToBeFilled);
                 // If the amount requested is more than what can be provided, partially fill the requested order. Remove the provided order. Leave the requested order be.
                 } else {
                     book.removeOrder(ask);
                     book.updateOrderFillAmount(order, askQuantity);
                     book.updateOrderFillAmount(ask, askQuantity);
+                    order.getOrderRequest().addToTotalDollarAmountFilled(askPrice * askQuantity);
+                    ask.getOrderRequest().addToTotalDollarAmountFilled(askPrice * askQuantity);
                 }
                 // If the requested order's filled total is as much as the original quantity, set it to filled
                 if (order.getOrderRequest().getQuantity() <= order.getOrderRequest().getAmountThatHasBeenFilled()) order.setHasBeenFilled(true);
@@ -126,7 +139,7 @@ public class OrdersService {
         NavigableMap<Double, Map<Long, Order>> bids = Data.QUOTES.get(order.getOrderRequest().getSymbol()).getBook().getBids().descendingMap();
         Set<Double> keys = bids.keySet();
         for (double bidPrice : keys) {
-            log.debug("The current bid price we are looking at is {}", bidPrice);
+            log.info("The current bid price we are looking at is {}", bidPrice);
             // For each price, get each order
             for (Order bid : bids.get(bidPrice).values()) {
                 // Get the amount that is present
@@ -139,17 +152,23 @@ public class OrdersService {
                     book.removeOrder(bid);
                     book.updateOrderFillAmount(order, amountTryingToBeFilled);
                     book.updateOrderFillAmount(bid, amountTryingToBeFilled);
+                    order.getOrderRequest().addToTotalDollarAmountFilled(bidPrice * amountTryingToBeFilled);
+                    bid.getOrderRequest().addToTotalDollarAmountFilled(bidPrice * amountTryingToBeFilled);
                     // If the amount requested is less than what can be provided, completely fill requested order. Remove the requested order. Leave the other order be.
                 } else if (amountTryingToBeFilled < bidQuantity) {
                     // If not, fill what you can
                     book.removeOrder(order);
                     book.updateOrderFillAmount(order, amountTryingToBeFilled);
                     book.updateOrderFillAmount(bid, amountTryingToBeFilled);
+                    order.getOrderRequest().addToTotalDollarAmountFilled(bidPrice * amountTryingToBeFilled);
+                    bid.getOrderRequest().addToTotalDollarAmountFilled(bidPrice * amountTryingToBeFilled);
                     // If the amount requested is more than what can be provided, partially fill the requested order. Remove the provided order. Leave the requested order be.
                 } else {
                     book.removeOrder(bid);
                     book.updateOrderFillAmount(order, bidQuantity);
                     book.updateOrderFillAmount(bid, bidQuantity);
+                    order.getOrderRequest().addToTotalDollarAmountFilled(bidPrice * bidQuantity);
+                    bid.getOrderRequest().addToTotalDollarAmountFilled(bidPrice * bidQuantity);
                 }
                 // If the requested order's filled total is as much as the original quantity, set it to filled
                 if (order.getOrderRequest().getQuantity() <= order.getOrderRequest().getAmountThatHasBeenFilled()) order.setHasBeenFilled(true);

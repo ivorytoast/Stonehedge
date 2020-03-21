@@ -3,17 +3,16 @@ package com.snow.stonehedge.shared;
 import com.snow.stonehedge.marketdata.model.Book;
 import com.snow.stonehedge.marketdata.model.Quote;
 import com.snow.stonehedge.orders.model.Order;
+import com.snow.stonehedge.orders.model.OrderResponse;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
+import java.util.*;
 
 public class Data {
 
     public static Map<String, Quote> QUOTES = new HashMap<>();
     private static long orderId = 0;
     public static Queue<Order> ORDER_LIST = new LinkedList<>();
+    public static List<OrderResponse> HISTORICAL_ORDERS = new LinkedList<>();
 
     static {
         QUOTES.put("spx.us", new Quote("spx.us", new Book()));

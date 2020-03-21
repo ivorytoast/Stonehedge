@@ -17,8 +17,8 @@ public class StonehedgeApplication {
         SpringApplication.run(StonehedgeApplication.class, args);
         while (true) {
             try {
-                log.info("Waiting 10 seconds to process orders...");
-                Thread.sleep(10000);
+                log.info("Waiting 20 seconds to process orders...");
+                Thread.sleep(20000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -26,7 +26,7 @@ public class StonehedgeApplication {
             List<OrderResponse> responses = ordersService.processOrders();
             if (responses.size() == 0) log.info("No orders processed...");
             responses.forEach(orderResponse -> {
-                log.info("Order # " + orderResponse.getTradeId() + " (" + orderResponse.getSuccessOrFailure() + "), @ " + orderResponse.getFillPrice());
+                log.info("Order # " + orderResponse.getTradeId() + " (" + orderResponse.getSuccessOrFailure() + ", " + orderResponse.getBuyOrSell() + "), @ " + orderResponse.getFillPrice());
             });
             log.info("Processed orders...");
         }

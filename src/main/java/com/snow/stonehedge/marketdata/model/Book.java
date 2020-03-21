@@ -4,12 +4,14 @@ import com.snow.stonehedge.orders.model.BuyOrSell;
 import com.snow.stonehedge.orders.model.Order;
 import com.snow.stonehedge.orders.model.OrderRequest;
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@Slf4j
 public class Book {
 
     private TreeMap<Double, Map<Long, Order>> bids;
@@ -25,7 +27,7 @@ public class Book {
     }
 
     public void addOrder(Order order) {
-        double price = order.getOrderRequest().getPrice();
+        double price = order.getOrderRequest().getFillPrice();
         if (order.getOrderRequest().getBuyOrSell() == BuyOrSell.BUY) {
             if (this.bids.containsKey(price)) {
                 Map<Long, Order> values = this.bids.get(price);
@@ -61,14 +63,22 @@ public class Book {
     }
 
     public void removeOrder(Order order) {
-        double price = order.getOrderRequest().getPrice();
+        double price = order.getOrderRequest().getFillPrice();
         long orderID = order.getId();
         if (order.getOrderRequest().getBuyOrSell() == BuyOrSell.BUY) {
             Map<Long, Order> values = this.bids.get(price);
-            values.remove(orderID);
+            if (values != null && values.containsKey(orderID)) {
+                values.remove(orderID);
+            } else {
+                log.error("ORDER ID {} not found in bids!", orderID);
+            }
         } else {
             Map<Long, Order> values = this.asks.get(price);
-            values.remove(orderID);
+            if (values != null && values.containsKey(orderID)) {
+                values.remove(orderID);
+            } else {
+                log.error("ORDER ID {} not found in asks!", orderID);
+            }
         }
     }
 

@@ -15,4 +15,6 @@ For each order:
       1. If it has gone through 5 cycles, it is always a failure
       2. It at least 1 share is filled, then it is successful
          3. If it is not full, update the Fill Status
-   3. After each order gets processed, if any tarde has been bought or sold, that price becomes the current price of the underlier
+   3. After each order gets processed, if any trade has been bought or sold, that price becomes the current price of the underlier
+   
+If it is a market order, the price is ignored since it will retrieve the best bid or ask
