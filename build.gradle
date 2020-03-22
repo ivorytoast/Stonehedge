@@ -1,7 +1,3 @@
-plugins {
-    id 'war'
-}
-
 allprojects {
     group = 'com.hamilla.snow'
     version = '1.0.0'
