@@ -6,6 +6,7 @@ import com.snow.stonehedge.shared.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Slf4j
@@ -14,13 +15,32 @@ public class OrdersService {
     public long submitOrder(OrderRequest orderRequest) {
         long orderID = Data.GET_ORDER_ID();
         Order newOrder = new Order(orderID, orderRequest);
-        Data.ORDER_LIST.add(newOrder);
         if (Data.QUOTES.containsKey(orderRequest.getSymbol())) {
+            Book book = Data.QUOTES.get(orderRequest.getSymbol()).getBook();
+            setNewCurrentPrice(orderRequest, book);
+            newOrder.getOrderRequest().setFillPrice(book.getCurrentPrice().doubleValue());
             Data.QUOTES.get(orderRequest.getSymbol()).getBook().addOrder(newOrder);
+            Data.ORDER_LIST.add(newOrder);
             return orderID;
         } else {
             log.error("Symbol does not exist on the exchange!");
             return -1;
+        }
+    }
+
+    private void setNewCurrentPrice(OrderRequest orderRequest, Book book) {
+        if (orderRequest.getBuyOrSell() == BuyOrSell.BUY) {
+            long bids = book.getTotalNumberOfBids() + orderRequest.getQuantity();
+            if (bids > 100) {
+                BigDecimal value = BigDecimal.valueOf(1.001);
+                book.setCurrentPrice(book.getCurrentPrice().multiply(value).setScale(2, RoundingMode.HALF_EVEN));
+            }
+        } else {
+            long asks = book.getTotalNumberOfAsks() + orderRequest.getQuantity();
+            if (asks > 100) {
+                BigDecimal value = BigDecimal.valueOf(0.999);
+                book.setCurrentPrice(book.getCurrentPrice().multiply(value).setScale(2, RoundingMode.HALF_EVEN));
+            }
         }
     }
 
@@ -55,15 +75,17 @@ public class OrdersService {
                     book.updateOrderFillAmount(order, order.getOrderRequest().getQuantity());
                     order.getOrderRequest().setFillPrice(0.0);
                 }
-                orderResponseList.add(new OrderResponse(
+                OrderResponse orderResponse = new OrderResponse(
                     order.getId(),
                     successOrFailure,
                     order.getOrderRequest().getBuyOrSell(),
                     order.getOrderRequest().getSymbol(),
                     order.getOrderRequest().getQuantity(),
                     BigDecimal.valueOf(order.getOrderRequest().getFillPrice()),
-                    fillStatus)
+                    fillStatus
                 );
+                orderResponseList.add(orderResponse);
+                book.setMostRecentTradeAndCurrentPrice(orderResponse);
             } else {
                 carryOverOrderList.add(order);
             }
@@ -93,9 +115,9 @@ public class OrdersService {
         TreeMap<Double, Map<Long, Order>> asks = Data.QUOTES.get(order.getOrderRequest().getSymbol()).getBook().getAsks();
         // Get all the prices that the underlier has that MIGHT have stock
         Set<Double> keys = asks.keySet();
-        for (double key : keys) System.out.print(key + ", ");
+//        for (double key : keys) log.info(key + ", ");
         for (double askPrice : keys) {
-            log.info("The current ask price we are looking at is {}", askPrice);
+//            log.info("The current ask price we are looking at is {}", askPrice);
             // For each price, get each order
             for (Order ask : asks.get(askPrice).values()) {
                 // Get the amount that is present
@@ -139,7 +161,7 @@ public class OrdersService {
         NavigableMap<Double, Map<Long, Order>> bids = Data.QUOTES.get(order.getOrderRequest().getSymbol()).getBook().getBids().descendingMap();
         Set<Double> keys = bids.keySet();
         for (double bidPrice : keys) {
-            log.info("The current bid price we are looking at is {}", bidPrice);
+//            log.info("The current bid price we are looking at is {}", bidPrice);
             // For each price, get each order
             for (Order bid : bids.get(bidPrice).values()) {
                 // Get the amount that is present
@@ -179,7 +201,7 @@ public class OrdersService {
     }
 
     private boolean hasOrderFinished(Order order) {
-        return order.getOrderRequest().getTimeLimit() >= 5;
+        return order.getOrderRequest().getTimeLimit() >= 30000;
     }
 
     private boolean isBuy(Order order) {

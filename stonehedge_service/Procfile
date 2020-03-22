@@ -1,1 +1,0 @@
-web: java -jar build/libs/stonehedge_service-1.0.0.jar

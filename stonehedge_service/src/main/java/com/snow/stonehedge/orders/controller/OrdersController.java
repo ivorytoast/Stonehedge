@@ -42,7 +42,7 @@ public class OrdersController {
         return new ArrayList<>(Data.ORDER_LIST);
     }
 
-    @GetMapping("/v1/realtime/orders/historical/{orderID}")
+    @GetMapping("/v1/realtime/orders/{orderID}")
     @NonNull
     public Order getOrderInformationForOrder(@PathVariable long orderID) {
         Optional<Order> output = Data.ORDER_LIST.stream()
@@ -51,7 +51,7 @@ public class OrdersController {
         return output.orElseGet(Order::new);
     }
 
-    @GetMapping("/v1/realtime/orders/{orderID}")
+    @GetMapping("/v1/realtime/orders/historical/{orderID}")
     @NonNull
     public OrderResponse getHistoricalOrderResponse(@PathVariable long orderID) {
         Optional<OrderResponse> output = Data.HISTORICAL_ORDERS.stream()

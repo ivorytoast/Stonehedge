@@ -2,10 +2,12 @@ package com.snow.stonehedge.marketdata.model;
 
 import com.snow.stonehedge.orders.model.BuyOrSell;
 import com.snow.stonehedge.orders.model.Order;
-import com.snow.stonehedge.orders.model.OrderRequest;
+import com.snow.stonehedge.orders.model.OrderResponse;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 @Getter
@@ -16,14 +18,16 @@ public class Book {
 
     private TreeMap<Double, Map<Long, Order>> bids;
     private TreeMap<Double, Map<Long, Order>> asks;
-    private OrderRequest mostRecentTrade;
+    private OrderResponse mostRecentTrade;
+    private BigDecimal currentPrice;
     private long totalNumberOfBids;
     private long totalNumberOfAsks;
 
-    public Book() {
+    public Book(double startPrice) {
         bids = new TreeMap<>();
         asks = new TreeMap<>();
-        mostRecentTrade = new OrderRequest();
+        mostRecentTrade = new OrderResponse();
+        currentPrice = BigDecimal.valueOf(startPrice);
     }
 
     public void addOrder(Order order) {
@@ -80,6 +84,11 @@ public class Book {
                 log.error("ORDER ID {} not found in asks!", orderID);
             }
         }
+    }
+
+    public void setMostRecentTradeAndCurrentPrice(OrderResponse order) {
+        this.mostRecentTrade = order;
+        this.currentPrice = order.getFillPrice();
     }
 
 }

@@ -17,18 +17,18 @@ public class StonehedgeApplication {
         SpringApplication.run(StonehedgeApplication.class, args);
         while (true) {
             try {
-                log.info("Waiting 20 seconds to process orders...");
-                Thread.sleep(20000);
+//                log.info("Waiting 20 seconds to process orders...");
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            log.info("Processing orders...");
+//            log.info("Processing orders...");
             List<OrderResponse> responses = ordersService.processOrders();
-            if (responses.size() == 0) log.info("No orders processed...");
+//            if (responses.size() == 0) log.info("No orders processed...");
             responses.forEach(orderResponse -> {
                 log.info("Order # " + orderResponse.getTradeId() + " (" + orderResponse.getSuccessOrFailure() + ", " + orderResponse.getBuyOrSell() + "), @ " + orderResponse.getFillPrice());
             });
-            log.info("Processed orders...");
+//            log.info("Processed orders...");
         }
     }
 

@@ -5,6 +5,7 @@ import com.snow.stonehedge.marketdata.model.Quote;
 import com.snow.stonehedge.orders.model.Order;
 import com.snow.stonehedge.orders.model.OrderResponse;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 public class Data {
@@ -15,13 +16,13 @@ public class Data {
     public static List<OrderResponse> HISTORICAL_ORDERS = new LinkedList<>();
 
     static {
-        QUOTES.put("spx.us", new Quote("spx.us", new Book()));
+        QUOTES.put("spx.us", new Quote("spx.us", new Book(BigDecimal.valueOf(2300.0).doubleValue())));
     }
 
     public static void RESET_DATA() {
         ORDER_LIST.clear();
         QUOTES.clear();
-        QUOTES.put("spx.us", new Quote("spx.us", new Book()));
+        QUOTES.put("spx.us", new Quote("spx.us", new Book(BigDecimal.valueOf(2300.0).doubleValue())));
     }
 
     public static long GET_ORDER_ID() {

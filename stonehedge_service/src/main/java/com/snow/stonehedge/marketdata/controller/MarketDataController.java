@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 @RestController("/marketdata")
@@ -22,7 +23,7 @@ public class MarketDataController {
     @GetMapping("/v1/realtime/{symbol}")
     @NonNull
     public Quote getSymbolQuote(@PathVariable String symbol) {
-        return Data.QUOTES.getOrDefault(symbol, new Quote("", new Book()));
+        return Data.QUOTES.getOrDefault(symbol, new Quote("", new Book(BigDecimal.valueOf(3000.0).doubleValue())));
     }
 
     @GetMapping("/v1/book/{symbol}/bids")
