@@ -5,6 +5,7 @@ import com.snow.stonehedge.marketdata.model.Quote;
 import com.snow.stonehedge.orders.model.Order;
 import com.snow.stonehedge.shared.Data;
 import lombok.NonNull;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;

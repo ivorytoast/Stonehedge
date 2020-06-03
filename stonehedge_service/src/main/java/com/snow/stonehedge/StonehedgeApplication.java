@@ -13,23 +13,23 @@ import java.util.List;
 public class StonehedgeApplication {
 
     public static void main(String[] args) {
-        OrdersService ordersService = new OrdersService();
+//        OrdersService ordersService = new OrdersService();
         SpringApplication.run(StonehedgeApplication.class, args);
-        while (true) {
-            try {
+//        while (true) {
+//            try {
 //                log.info("Waiting 20 seconds to process orders...");
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//                Thread.sleep(10);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 //            log.info("Processing orders...");
-            List<OrderResponse> responses = ordersService.processOrders();
+//            List<OrderResponse> responses = ordersService.processOrders();
 //            if (responses.size() == 0) log.info("No orders processed...");
-            responses.forEach(orderResponse -> {
-                log.info("Order # " + orderResponse.getTradeId() + " (" + orderResponse.getSuccessOrFailure() + ", " + orderResponse.getBuyOrSell() + "), @ " + orderResponse.getFillPrice());
-            });
+//            responses.forEach(orderResponse -> {
+//                log.info("Order # " + orderResponse.getTradeId() + " (" + orderResponse.getSuccessOrFailure() + ", " + orderResponse.getBuyOrSell() + "), @ " + orderResponse.getFillPrice());
+//            });
 //            log.info("Processed orders...");
-        }
+//        }
     }
 
 }
