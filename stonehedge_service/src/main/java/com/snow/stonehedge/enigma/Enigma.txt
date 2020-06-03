@@ -1,0 +1,106 @@
+* Bids (Clients sell at these price, Exchange buys at these prices) *
+* Asks (Clients buy at these price, Exchange sells at these prices) *
+-----------------------
+   14 (End of Asks)
+   13
+   12
+   11 (Best Ask)
+Current Price -> 10
+    9 (Best Bid)
+    8
+    7
+    6 (End of Bids)
+-----------------------
+
+1. How to match prices.
+Given a two lists of prices, one represents bids and the other asks, match these prices together.
+For now, the assumption is that all orders are the same amount.
+
+What is the goal:
+Go through one order, then one ask, matching them with the best available price
+
+Assumptions:
+Latest price 10
+Everything is from the exchange's perspective
+
+Things to notice:
+When I am adding the bids in, I should not have the same prices repeating. That is the natural key.
+It is not the order that the bids came in. That is the role of the order list. Instead, the bids should
+handle the key-value pair of the price-totalAmount
+
+Instead of looking like this:
+100 @ 9.0
+200 @ 10.0
+50 @ 8.0
+100 @ 9.0
+200 @ 10.0
+50 @ 8.0
+
+It should look like is:
+10.0 @ 400 -> [200 @ 10.0, 200 @ 10.0]
+9.0 @ 200 -> [100 @ 9.00, 100 @ 9.00]
+8.0 @ 100 -> [50 @ 8.00, 50 @ 8.00]
+
+Map<BidKey, List<Bid>>
+
+Update:
+Now it looks like this, just like above:
+
+200 @ $9.0 -> [100 @ $9.0, 100 @ $9.0]
+400 @ $10.0 -> [200 @ $10.0, 200 @ $10.0]
+100 @ $8.0 -> [50 @ $8.0, 50 @ $8.0]
+-----
+Best order -> 10.0
+Total amount of bids -> 700.0
+
+
+
+
+Map of Price -> Quantity
+Map of Price -> List<Bids>
+
+
+
+
+
+When matching, you have 2 concerns:
+
+1. The best price
+2. In the correct order
+
+For the following, if you have the following on the order list (asks):
+
+50 @ 13
+100 @ 11
+300 @ 12
+
+And you put in a buy market order for 150 shares, then you should be filled with:
+
+100 @ 11
+50 @ 12
+
+NOT:
+
+150 @ 12
+
+
+
+-------------
+
+
+
+
+For the following, if you have the following on the order list (bids):
+
+50 @ 11
+100 @ 13
+300 @ 12
+
+And you put in a sell market order for 150 shares, then you should be filled with:
+
+100 @ 13
+50 @ 12
+
+NOT:
+
+150 @ 12
