@@ -3,9 +3,9 @@ package com.snow.stonehedge.enigma;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class Book {
+public abstract class Book {
 
-    public boolean isBidBook;
+    public BookType bookType;
 
     public double bestPrice;
     public double amountAvailable;
@@ -14,9 +14,9 @@ public class Book {
     public Map<Double, List<Order>> ordersPerPrice;
     public List<Order> completedOrders;
 
-    public Book(boolean isBidBook) {
-        this.isBidBook = isBidBook;
-        if (isBidBook) {
+    public Book(BookType bookType) {
+        this.bookType = bookType;
+        if (bookType == BookType.BID) {
             this.bestPrice = 0.0;
             this.availablePerPrice = new TreeMap<>(Collections.reverseOrder());
         } else {
@@ -34,17 +34,13 @@ public class Book {
         updateBestPrice(order);
     }
 
-    public void removeOrder(Order order) {
-        Iterator<Order> iterator = ordersPerPrice.get(order.price).iterator();
-        while (iterator.hasNext()) {
-            Order orderValue = iterator.next();
-            if (orderValue.getId() == order.getId()) {
-                iterator.remove();
-                completedOrders.add(orderValue);
-                adjustAffectedValuesWhenRemovingOrder(order);
-                return;
-            }
-        }
+    public void removeOrder(Order order, double atPrice) {
+        availablePerPrice.put(atPrice, availablePerPrice.get(atPrice) - order.quantity);
+        ordersPerPrice.get(atPrice).remove(order);
+        amountAvailable -= order.quantity;
+        order.quantity = 0;
+        completedOrders.add(order);
+        updateBestPrice();
     }
 
     public void matchOrder(Order incomingOrder) {
@@ -53,16 +49,14 @@ public class Book {
             Order existingOrder = ordersPerPrice.get(price).get(0);
             if (incomingOrder.quantity == 0) return;
             if (incomingOrder.quantity <= existingOrder.quantity) {
-                adjustAvailablePerPrice(existingOrder.price, (incomingOrder.quantity * -1));
-                amountAvailable -= incomingOrder.quantity;
                 existingOrder.quantity -= incomingOrder.quantity;
-                incomingOrder.quantity = 0;
+                removeOrder(incomingOrder, price);
             } else {
                 incomingOrder.quantity -= existingOrder.quantity;
-                removeOrder(existingOrder);
+                removeOrder(existingOrder, price);
             }
         }
-
+        updateBestPrice();
     }
 
     private List<Double> findTheBestPricesToFillWith(Order order) {
@@ -84,12 +78,6 @@ public class Book {
             }
             return prices;
         }
-    }
-
-    private void adjustAffectedValuesWhenRemovingOrder(Order order) {
-        adjustAvailablePerPrice(order.price, (order.originalQuantity * -1));
-        amountAvailable -= order.originalQuantity;
-        updateBestPrice();
     }
 
     private void addOrder(Order order) {
@@ -116,7 +104,7 @@ public class Book {
     }
 
     private void updateBestPrice(Order order) {
-        if (isBidBook) {
+        if (bookType == BookType.BID) {
             if (order.price > bestPrice) bestPrice = order.price;
         } else {
             if (order.price < bestPrice) bestPrice = order.price;
@@ -129,7 +117,7 @@ public class Book {
         List<Order> bidsToTest = ordersPerPrice.values().stream()
             .flatMap(List::stream)
             .collect(Collectors.toList());
-        if (isBidBook) {
+        if (bookType == BookType.BID) {
             bestBidPrice = 0.0;
             for (Order value : bidsToTest) {
                 if (value.quantity > 0 && value.price > bestBidPrice) bestBidPrice = value.price;

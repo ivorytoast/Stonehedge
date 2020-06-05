@@ -1,10 +1,11 @@
 package com.snow.stonehedge.ui;
 
+import com.snow.stonehedge.enigma.Asks;
+import com.snow.stonehedge.enigma.Bids;
 import com.snow.stonehedge.enigma.Book;
 import com.snow.stonehedge.enigma.Order;
 import javafx.application.Application;
 import javafx.beans.property.*;
-import javafx.beans.value.ObservableDoubleValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -21,16 +22,21 @@ import java.util.stream.Collectors;
 
 public class HelloFX extends Application {
 
-    Book bids = new Book(true);
-    ObservableList<Order> orders = FXCollections.observableArrayList();
+    Book bids = new Bids();
+    Book asks = new Asks();
+    ObservableList<Order> bidList = FXCollections.observableArrayList();
+    ObservableList<Order> askList = FXCollections.observableArrayList();
     Stage window;
-    TableView<Order> ordersTable;
-    Label isBidBook, bestPrice, amountAvailable;
+    TableView<Order> bidsTable;
+    TableView<Order> asksTable;
+    TableView<Order> completedOrdersTable;
+    Label bestPrice, amountAvailable;
     TextField priceInput, quantityInput;
 
-    BooleanProperty isBidBookProperty = new SimpleBooleanProperty(bids.isBidBook);
     DoubleProperty bestPriceProperty = new SimpleDoubleProperty(bids.bestPrice);
     DoubleProperty amountAvailableProperty = new SimpleDoubleProperty(bids.amountAvailable);
+
+    ObservableList<Order> completedOrders = FXCollections.observableArrayList(bids.completedOrders);
 
     @Override
     public void start(Stage primaryStage) {
@@ -39,20 +45,52 @@ public class HelloFX extends Application {
         window.setMinWidth(650);
 
         TableColumn<Order, Double> ID_column = new TableColumn<>("ID");
-        ID_column.setMinWidth(150);
+        ID_column.setMinWidth(100);
         ID_column.setCellValueFactory(new PropertyValueFactory<>("id"));
 
         TableColumn<Order, Double> PRICE_column = new TableColumn<>("Price");
-        PRICE_column.setMinWidth(150);
+        PRICE_column.setMinWidth(100);
         PRICE_column.setCellValueFactory(new PropertyValueFactory<>("price"));
 
         TableColumn<Order, Long> QUANTITY_column = new TableColumn<>("Quantity");
-        QUANTITY_column.setMinWidth(150);
+        QUANTITY_column.setMinWidth(100);
         QUANTITY_column.setCellValueFactory(new PropertyValueFactory<>("quantity"));
 
         TableColumn<Order, Long> ORIGINAL_QAUNTITY_column = new TableColumn<>("Original Quantity");
-        ORIGINAL_QAUNTITY_column.setMinWidth(200);
+        ORIGINAL_QAUNTITY_column.setMinWidth(150);
         ORIGINAL_QAUNTITY_column.setCellValueFactory(new PropertyValueFactory<>("originalQuantity"));
+
+        TableColumn<Order, Double> ID_column2 = new TableColumn<>("ID");
+        ID_column2.setMinWidth(100);
+        ID_column2.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Order, Double> PRICE_column2 = new TableColumn<>("Price");
+        PRICE_column2.setMinWidth(100);
+        PRICE_column2.setCellValueFactory(new PropertyValueFactory<>("price"));
+
+        TableColumn<Order, Long> QUANTITY_column2 = new TableColumn<>("Quantity");
+        QUANTITY_column2.setMinWidth(100);
+        QUANTITY_column2.setCellValueFactory(new PropertyValueFactory<>("quantity"));
+
+        TableColumn<Order, Long> ORIGINAL_QAUNTITY_column2 = new TableColumn<>("Original Quantity");
+        ORIGINAL_QAUNTITY_column2.setMinWidth(150);
+        ORIGINAL_QAUNTITY_column2.setCellValueFactory(new PropertyValueFactory<>("originalQuantity"));
+
+        TableColumn<Order, Double> ID_column3 = new TableColumn<>("ID");
+        ID_column3.setMinWidth(100);
+        ID_column3.setCellValueFactory(new PropertyValueFactory<>("id"));
+
+        TableColumn<Order, Double> PRICE_column3 = new TableColumn<>("Price");
+        PRICE_column3.setMinWidth(100);
+        PRICE_column3.setCellValueFactory(new PropertyValueFactory<>("price"));
+
+        TableColumn<Order, Long> QUANTITY_column3 = new TableColumn<>("Quantity");
+        QUANTITY_column3.setMinWidth(100);
+        QUANTITY_column3.setCellValueFactory(new PropertyValueFactory<>("quantity"));
+
+        TableColumn<Order, Long> ORIGINAL_QAUNTITY_column3 = new TableColumn<>("Original Quantity");
+        ORIGINAL_QAUNTITY_column3.setMinWidth(150);
+        ORIGINAL_QAUNTITY_column3.setCellValueFactory(new PropertyValueFactory<>("originalQuantity"));
 
         priceInput = new TextField();
         priceInput.setPromptText("Price");
@@ -62,13 +100,8 @@ public class HelloFX extends Application {
         quantityInput.setPromptText("Quantity");
         quantityInput.setMinWidth(100);
 
-        Label bidBookLabel = new Label("Is Bid Book: ");
         Label bestPriceLabel = new Label("Best Price: ");
         Label amountAvailableLabel = new Label("Amount Available: ");
-
-        isBidBook = new Label();
-        isBidBook.setMinWidth(100);
-        isBidBook.textProperty().bind(isBidBookProperty.asString());
 
         bestPrice = new Label("Best Price: " + bestPriceProperty.getValue());
         bestPrice.setMinWidth(100);
@@ -78,7 +111,6 @@ public class HelloFX extends Application {
         amountAvailable.setMinWidth(100);
         amountAvailable.textProperty().bind(amountAvailableProperty.asString());
 
-        HBox bidBookBox = new HBox(bidBookLabel, isBidBook);
         HBox bestPriceBox = new HBox(bestPriceLabel, bestPrice);
         HBox amountAvailableBox = new HBox(amountAvailableLabel, amountAvailable);
 
@@ -92,7 +124,7 @@ public class HelloFX extends Application {
         HBox topHeader = new HBox();
         topHeader.setPadding(new Insets(10, 10, 10, 10));
         topHeader.setSpacing(0);
-        topHeader.getChildren().addAll(bidBookBox, bestPriceBox, amountAvailableBox);
+        topHeader.getChildren().addAll(bestPriceBox, amountAvailableBox);
         topHeader.setAlignment(Pos.CENTER);
 
         HBox bottomFooter = new HBox();
@@ -100,18 +132,36 @@ public class HelloFX extends Application {
         bottomFooter.setSpacing(10);
         bottomFooter.getChildren().addAll(priceInput, quantityInput, addButton, cancelButton, matchOrderButton);
 
-        ordersTable = new TableView<>();
-        ordersTable.setItems(getOrders());
+        bidsTable = new TableView<>();
+        bidsTable.setItems(bidList);
 
-        ordersTable.getColumns().add(ID_column);
-        ordersTable.getColumns().add(PRICE_column);
-        ordersTable.getColumns().add(QUANTITY_column);
-        ordersTable.getColumns().add(ORIGINAL_QAUNTITY_column);
+        bidsTable.getColumns().add(ID_column);
+        bidsTable.getColumns().add(PRICE_column);
+        bidsTable.getColumns().add(QUANTITY_column);
+        bidsTable.getColumns().add(ORIGINAL_QAUNTITY_column);
+
+        completedOrdersTable = new TableView<>();
+        completedOrdersTable.setItems(completedOrders);
+
+        completedOrdersTable.getColumns().add(ID_column2);
+        completedOrdersTable.getColumns().add(PRICE_column2);
+        completedOrdersTable.getColumns().add(QUANTITY_column2);
+        completedOrdersTable.getColumns().add(ORIGINAL_QAUNTITY_column2);
+
+        asksTable = new TableView<>();
+        asksTable.setItems(askList);
+
+        asksTable.getColumns().add(ID_column3);
+        asksTable.getColumns().add(PRICE_column3);
+        asksTable.getColumns().add(QUANTITY_column3);
+        asksTable.getColumns().add(ORIGINAL_QAUNTITY_column3);
 
         BorderPane layout = new BorderPane();
         layout.setTop(topHeader);
-        layout.setCenter(ordersTable);
+        layout.setLeft(bidsTable);
+        layout.setCenter(completedOrdersTable);
         layout.setBottom(bottomFooter);
+        layout.setRight(asksTable);
 
         Scene scene = new Scene(layout);
         window.setScene(scene);
@@ -123,15 +173,18 @@ public class HelloFX extends Application {
         amountAvailableProperty.setValue(bids.amountAvailable);
     }
 
-    private void updateTable() {
+    private void updateTables() {
         List<Order> allLiveOrdersOnBook = bids.ordersPerPrice.values()
             .stream()
             .flatMap(List::stream)
             .filter(x -> x.getQuantity() > 0)
             .collect(Collectors.toList());
 
-        orders.clear();
-        orders.addAll(allLiveOrdersOnBook);
+        bidList.clear();
+        completedOrders.clear();
+
+        bidList.addAll(allLiveOrdersOnBook);
+        completedOrders.addAll(bids.completedOrders);
     }
 
     private void updateFooter() {
@@ -141,7 +194,7 @@ public class HelloFX extends Application {
 
     private void updateUI() {
         updateHeader();
-        updateTable();
+        updateTables();
         updateFooter();
     }
 
@@ -166,8 +219,8 @@ public class HelloFX extends Application {
 
     private void cancelButtonClicked() {
         ObservableList<Order> productsSelected;
-        productsSelected = ordersTable.getSelectionModel().getSelectedItems();
-        productsSelected.forEach(x -> bids.removeOrder(new Order(x.getId(), x.getPrice(), x.getQuantity(), x.getOriginalQuantity())));
+        productsSelected = bidsTable.getSelectionModel().getSelectedItems();
+        productsSelected.forEach(x -> bids.removeOrder(new Order(x.getId(), x.getPrice(), x.getQuantity(), x.getOriginalQuantity()), x.getPrice()));
         updateUI();
     }
 
@@ -180,10 +233,6 @@ public class HelloFX extends Application {
         bids.processOrder(newOrder);
 
         updateUI();
-    }
-
-    public ObservableList<Order> getOrders() {
-        return orders;
     }
 
     public static void main(String[] args) {

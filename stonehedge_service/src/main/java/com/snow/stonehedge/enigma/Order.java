@@ -1,5 +1,7 @@
 package com.snow.stonehedge.enigma;
 
+import java.util.Objects;
+
 public class Order {
     long id = 0;
     double price;
@@ -42,5 +44,21 @@ public class Order {
 
     public long getOriginalQuantity() {
         return this.originalQuantity;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (!(o instanceof Order)) return false;
+        Order order = (Order) o;
+        return id == order.id &&
+            price == order.price &&
+            quantity == order.quantity &&
+            originalQuantity == order.originalQuantity;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, price, quantity, originalQuantity);
     }
 }
