@@ -35,28 +35,52 @@ public abstract class Book {
     }
 
     public void removeOrder(Order order, double atPrice) {
-        availablePerPrice.put(atPrice, availablePerPrice.get(atPrice) - order.quantity);
-        ordersPerPrice.get(atPrice).remove(order);
+        if (ordersPerPrice.containsKey(order.price) && ordersPerPrice.get(order.price).contains(order)) {
+            availablePerPrice.put(atPrice, availablePerPrice.get(atPrice) - order.quantity);
+            ordersPerPrice.get(atPrice).remove(order);
+            amountAvailable -= order.quantity;
+            order.quantity = 0;
+            completedOrders.add(order);
+            updateBestPrice();
+        }
+    }
+
+    public void removeExistingOrder(Order order) {
+        availablePerPrice.put(order.price, availablePerPrice.get(order.price) - order.quantity);
+        ordersPerPrice.get(order.price).remove(order);
         amountAvailable -= order.quantity;
         order.quantity = 0;
         completedOrders.add(order);
         updateBestPrice();
     }
 
-    public void matchOrder(Order incomingOrder) {
+    // Order hasn't been added yet. So: take away amount of shares matched, set quantity to 0 and add to completed list.
+    public void removeIncomingOrder(Order order) {
+        amountAvailable -= order.quantity;
+        order.quantity = 0;
+        completedOrders.add(order);
+        updateBestPrice();
+    }
+
+    public boolean matchOrder(Order incomingOrder) {
         List<Double> prices = findTheBestPricesToFillWith(incomingOrder);
         for (double price : prices) {
             Order existingOrder = ordersPerPrice.get(price).get(0);
-            if (incomingOrder.quantity == 0) return;
-            if (incomingOrder.quantity <= existingOrder.quantity) {
+            if (incomingOrder.quantity == 0) break;
+            if (incomingOrder.quantity == existingOrder.quantity) {
+                incomingOrder.quantity = 0;
+                removeExistingOrder(existingOrder);
+                removeIncomingOrder(incomingOrder);
+            } else if (incomingOrder.quantity < existingOrder.quantity) {
                 existingOrder.quantity -= incomingOrder.quantity;
-                removeOrder(incomingOrder, price);
+                removeIncomingOrder(incomingOrder);
             } else {
                 incomingOrder.quantity -= existingOrder.quantity;
-                removeOrder(existingOrder, price);
+                removeExistingOrder(existingOrder);
             }
         }
         updateBestPrice();
+        return incomingOrder.quantity == 0;
     }
 
     private List<Double> findTheBestPricesToFillWith(Order order) {
