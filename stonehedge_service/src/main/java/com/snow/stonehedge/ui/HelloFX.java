@@ -1,9 +1,6 @@
 package com.snow.stonehedge.ui;
 
-import com.snow.stonehedge.enigma.Asks;
-import com.snow.stonehedge.enigma.Bids;
-import com.snow.stonehedge.enigma.Book;
-import com.snow.stonehedge.enigma.Order;
+import com.snow.stonehedge.enigma.*;
 import javafx.application.Application;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
@@ -22,21 +19,20 @@ import java.util.stream.Collectors;
 
 public class HelloFX extends Application {
 
-    Book bids = new Bids();
-    Book asks = new Asks();
+    Symbol currentSymbol = new Symbol("spx");
     ObservableList<Order> bidList = FXCollections.observableArrayList();
     ObservableList<Order> askList = FXCollections.observableArrayList();
     Stage window;
     TableView<Order> bidsTable;
     TableView<Order> asksTable;
     TableView<Order> completedOrdersTable;
-    Label bestPrice, amountAvailable;
+    Label underlier, bestPrice;
     TextField priceInput, quantityInput;
 
-    DoubleProperty bestPriceProperty = new SimpleDoubleProperty(bids.bestPrice);
-    DoubleProperty amountAvailableProperty = new SimpleDoubleProperty(bids.amountAvailable);
+    StringProperty underlierProperty = new SimpleStringProperty(currentSymbol.underlier);
+    DoubleProperty bestPriceProperty = new SimpleDoubleProperty(currentSymbol.asks.bestPrice);
 
-    ObservableList<Order> completedOrders = FXCollections.observableArrayList(bids.completedOrders);
+    ObservableList<Order> completedOrders = FXCollections.observableArrayList(currentSymbol.bids.completedOrders);
 
     @Override
     public void start(Stage primaryStage) {
@@ -100,37 +96,43 @@ public class HelloFX extends Application {
         quantityInput.setPromptText("Quantity");
         quantityInput.setMinWidth(100);
 
-        Label bestPriceLabel = new Label("Best Price: ");
-        Label amountAvailableLabel = new Label("Amount Available: ");
+        underlier = new Label(underlierProperty.getValue());
+        underlier.setAlignment(Pos.CENTER_RIGHT);
+        underlier.setMinWidth(40);
+        underlier.textProperty().bind(underlierProperty);
 
-        bestPrice = new Label("Best Price: " + bestPriceProperty.getValue());
-        bestPrice.setMinWidth(100);
+        Label atLabel = new Label(" @ ");
+        atLabel.setAlignment(Pos.CENTER);
+        atLabel.setMinWidth(20);
+
+        bestPrice = new Label();
+        bestPrice.setAlignment(Pos.CENTER_LEFT);
+        bestPrice.setMinWidth(40);
         bestPrice.textProperty().bind(bestPriceProperty.asString());
 
-        amountAvailable = new Label();
-        amountAvailable.setMinWidth(100);
-        amountAvailable.textProperty().bind(amountAvailableProperty.asString());
+        HBox bestPriceBox = new HBox(underlier, atLabel, bestPrice);
 
-        HBox bestPriceBox = new HBox(bestPriceLabel, bestPrice);
-        HBox amountAvailableBox = new HBox(amountAvailableLabel, amountAvailable);
-
-        Button addButton = new Button("Add");
-        addButton.setOnAction(e -> addButtonClicked());
+        Button buyButton = new Button("Buy");
+        buyButton.setOnAction(e -> buyButtonClicked());
+        Button sellButton = new Button("Sell");
+        sellButton.setOnAction(e -> sellButtonClicked());
         Button cancelButton = new Button("Cancel");
         cancelButton.setOnAction(e -> cancelButtonClicked());
-        Button matchOrderButton = new Button("Match Order");
-        matchOrderButton.setOnAction(e -> matchOrderButtonClicked());
+        Button buyMarketButton = new Button("Buy Market");
+        buyMarketButton.setOnAction(e -> buyMarketButtonClicked());
+        Button sellMarketButton = new Button("Sell Market");
+        sellMarketButton.setOnAction(e -> sellMarketButtonClicked());
 
         HBox topHeader = new HBox();
         topHeader.setPadding(new Insets(10, 10, 10, 10));
         topHeader.setSpacing(0);
-        topHeader.getChildren().addAll(bestPriceBox, amountAvailableBox);
+        topHeader.getChildren().addAll(bestPriceBox);
         topHeader.setAlignment(Pos.CENTER);
 
         HBox bottomFooter = new HBox();
         bottomFooter.setPadding(new Insets(10, 10, 10, 10));
         bottomFooter.setSpacing(10);
-        bottomFooter.getChildren().addAll(priceInput, quantityInput, addButton, cancelButton, matchOrderButton);
+        bottomFooter.getChildren().addAll(priceInput, quantityInput, buyButton, sellButton, cancelButton, buyMarketButton, sellMarketButton);
 
         bidsTable = new TableView<>();
         bidsTable.setItems(bidList);
@@ -139,6 +141,8 @@ public class HelloFX extends Application {
         bidsTable.getColumns().add(PRICE_column);
         bidsTable.getColumns().add(QUANTITY_column);
         bidsTable.getColumns().add(ORIGINAL_QAUNTITY_column);
+
+        bidsTable.getSortOrder().add(PRICE_column);
 
         completedOrdersTable = new TableView<>();
         completedOrdersTable.setItems(completedOrders);
@@ -156,6 +160,9 @@ public class HelloFX extends Application {
         asksTable.getColumns().add(QUANTITY_column3);
         asksTable.getColumns().add(ORIGINAL_QAUNTITY_column3);
 
+        PRICE_column3.setSortType(TableColumn.SortType.DESCENDING);
+        asksTable.getSortOrder().add(PRICE_column3);
+
         BorderPane layout = new BorderPane();
         layout.setTop(topHeader);
         layout.setLeft(bidsTable);
@@ -163,28 +170,46 @@ public class HelloFX extends Application {
         layout.setBottom(bottomFooter);
         layout.setRight(asksTable);
 
+        // To make sure it doesn't show a large number for the price if the underlier has not traded yet
+        updateHeader();
+
         Scene scene = new Scene(layout);
         window.setScene(scene);
         window.show();
     }
 
     private void updateHeader() {
-        bestPriceProperty.setValue(bids.bestPrice);
-        amountAvailableProperty.setValue(bids.amountAvailable);
+        underlierProperty.setValue(currentSymbol.underlier);
+
+        if (currentSymbol.asks.bestPrice == Double.MAX_VALUE) {
+            bestPriceProperty.setValue(0.0);
+        } else {
+            bestPriceProperty.setValue(currentSymbol.asks.bestPrice);
+        }
     }
 
     private void updateTables() {
-        List<Order> allLiveOrdersOnBook = bids.ordersPerPrice.values()
+        List<Order> allLiveBids = currentSymbol.bids.ordersPerPrice.values()
+            .stream()
+            .flatMap(List::stream)
+            .filter(x -> x.getQuantity() > 0)
+            .collect(Collectors.toList());
+
+        List<Order> allLiveAsks = currentSymbol.asks.ordersPerPrice.values()
             .stream()
             .flatMap(List::stream)
             .filter(x -> x.getQuantity() > 0)
             .collect(Collectors.toList());
 
         bidList.clear();
+        askList.clear();
         completedOrders.clear();
 
-        bidList.addAll(allLiveOrdersOnBook);
-        completedOrders.addAll(bids.completedOrders);
+        bidList.addAll(allLiveBids);
+        askList.addAll(allLiveAsks);
+
+        completedOrders.addAll(currentSymbol.bids.completedOrders);
+        completedOrders.addAll(currentSymbol.asks.completedOrders);
     }
 
     private void updateFooter() {
@@ -198,39 +223,48 @@ public class HelloFX extends Application {
         updateFooter();
     }
 
-    // Order order1 = new Order(11, 50);
-    // Order order2 = new Order(13, 100);
-    // Order order3 = new Order(12, 300);
-
-    // bids.processOrder(order1);
-    // bids.processOrder(order2);
-    // bids.processOrder(order3);
-
-    // bids.matchOrder(newOrder);
-    private void addButtonClicked() {
+    private void buyButtonClicked() {
         double price = Double.parseDouble(priceInput.getText());
         long quantity = Long.parseLong(quantityInput.getText());
         Order newOrder = new Order(price, quantity);
+        currentSymbol.bids.processOrder(newOrder);
+        updateUI();
+    }
 
-        bids.processOrder(newOrder);
-
+    private void sellButtonClicked() {
+        double price = Double.parseDouble(priceInput.getText());
+        long quantity = Long.parseLong(quantityInput.getText());
+        Order newOrder = new Order(price, quantity);
+        currentSymbol.asks.processOrder(newOrder);
         updateUI();
     }
 
     private void cancelButtonClicked() {
-        ObservableList<Order> productsSelected;
-        productsSelected = bidsTable.getSelectionModel().getSelectedItems();
-        productsSelected.forEach(x -> bids.removeOrder(new Order(x.getId(), x.getPrice(), x.getQuantity(), x.getOriginalQuantity()), x.getPrice()));
+        ObservableList<Order> bidsSelected = bidsTable.getSelectionModel().getSelectedItems();
+        ObservableList<Order> asksSelected = asksTable.getSelectionModel().getSelectedItems();
+        bidsSelected.forEach(x -> currentSymbol.bids.removeOrder(new Order(x.getId(), x.getPrice(), x.getQuantity(), x.getOriginalQuantity()), x.getPrice()));
+        asksSelected.forEach(x -> currentSymbol.asks.removeOrder(new Order(x.getId(), x.getPrice(), x.getQuantity(), x.getOriginalQuantity()), x.getPrice()));
         updateUI();
     }
 
-    private void matchOrderButtonClicked() {
-        double price = Double.parseDouble(priceInput.getText());
+    private void buyMarketButtonClicked() {
+        double price = currentSymbol.asks.bestPrice;
         long quantity = Long.parseLong(quantityInput.getText());
         Order newOrder = new Order(price, quantity);
-        bids.matchOrder(newOrder);
+        boolean fullyMatched = currentSymbol.asks.matchOrder(newOrder);
 
-        bids.processOrder(newOrder);
+        if (!fullyMatched) currentSymbol.bids.processOrder(newOrder);
+
+        updateUI();
+    }
+
+    private void sellMarketButtonClicked() {
+        double price = currentSymbol.bids.bestPrice;
+        long quantity = Long.parseLong(quantityInput.getText());
+        Order newOrder = new Order(price, quantity);
+        boolean fullyMatched = currentSymbol.bids.matchOrder(newOrder);
+        
+        if (!fullyMatched) currentSymbol.asks.processOrder(newOrder);
 
         updateUI();
     }
