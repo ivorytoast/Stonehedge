@@ -263,7 +263,7 @@ public class HelloFX extends Application {
         long quantity = Long.parseLong(quantityInput.getText());
         Order newOrder = new Order(price, quantity);
         boolean fullyMatched = currentSymbol.bids.matchOrder(newOrder);
-        
+
         if (!fullyMatched) currentSymbol.asks.processOrder(newOrder);
 
         updateUI();
