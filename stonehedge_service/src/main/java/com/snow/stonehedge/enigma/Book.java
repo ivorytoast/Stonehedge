@@ -10,12 +10,15 @@ public abstract class Book {
     public double bestPrice;
     public double amountAvailable;
 
+    public double lastTradePrice;
+
     public TreeMap<Double, Long> availablePerPrice;
     public Map<Double, List<Order>> ordersPerPrice;
     public List<Order> completedOrders;
 
     public Book(BookType bookType) {
         this.bookType = bookType;
+        this.lastTradePrice = -1.0;
         if (bookType == BookType.BID) {
             this.bestPrice = 0.0;
             this.availablePerPrice = new TreeMap<>(Collections.reverseOrder());
@@ -65,18 +68,23 @@ public abstract class Book {
     public boolean matchOrder(Order incomingOrder) {
         List<Double> prices = findTheBestPricesToFillWith(incomingOrder);
         for (double price : prices) {
-            Order existingOrder = ordersPerPrice.get(price).get(0);
-            if (incomingOrder.quantity == 0) break;
-            if (incomingOrder.quantity == existingOrder.quantity) {
-                incomingOrder.quantity = 0;
-                removeExistingOrder(existingOrder);
-                removeIncomingOrder(incomingOrder);
-            } else if (incomingOrder.quantity < existingOrder.quantity) {
-                existingOrder.quantity -= incomingOrder.quantity;
-                removeIncomingOrder(incomingOrder);
-            } else {
-                incomingOrder.quantity -= existingOrder.quantity;
-                removeExistingOrder(existingOrder);
+            int tradesAtPrice = ordersPerPrice.get(price).size();
+            for (int i = 0; i < tradesAtPrice; i++) {
+                Order existingOrder = ordersPerPrice.get(price).get(0);
+                if (incomingOrder.quantity == 0) break;
+                if (incomingOrder.quantity == existingOrder.quantity) {
+                    incomingOrder.quantity = 0;
+                    removeExistingOrder(existingOrder);
+                    removeIncomingOrder(incomingOrder);
+                    lastTradePrice = price;
+                } else if (incomingOrder.quantity < existingOrder.quantity) {
+                    existingOrder.quantity -= incomingOrder.quantity;
+                    removeIncomingOrder(incomingOrder);
+                    lastTradePrice = price;
+                } else {
+                    incomingOrder.quantity -= existingOrder.quantity;
+                    removeExistingOrder(existingOrder);
+                }
             }
         }
         updateBestPrice();
