@@ -1,19 +1,35 @@
 package com.snow.stonehedge;
 
-import com.snow.stonehedge.orders.model.OrderResponse;
-import com.snow.stonehedge.orders.service.OrdersService;
+import com.google.auth.oauth2.GoogleCredentials;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.util.List;
+import java.io.FileInputStream;
 
 @SpringBootApplication()
 @Slf4j
 public class StonehedgeApplication {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
 //        OrdersService ordersService = new OrdersService();
+        FileInputStream serviceAccount = new FileInputStream("serviceAccountKey.json");
+
+        FirebaseOptions options = new FirebaseOptions.Builder()
+            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+            .setDatabaseUrl("https://fair-1fe18.firebaseio.com")
+            .build();
+
+        if (FirebaseApp.getApps().size() == 0) {
+            FirebaseApp.initializeApp(options);
+        } else if (FirebaseApp.getApps().size() == 1) {
+            FirebaseApp.getInstance();
+        } else {
+            throw new Exception("Multiple Firebase Apps running at the same time -- cannot start!");
+        }
+
         SpringApplication.run(StonehedgeApplication.class, args);
 //        while (true) {
 //            try {

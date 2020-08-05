@@ -19,7 +19,9 @@ import java.util.stream.Collectors;
 
 public class HelloFX extends Application {
 
-    Symbol currentSymbol = new Symbol("spx");
+    Symbol spx = new Symbol("spx",  3000.0);
+    Symbol mitk = new Symbol("mitk", 10.0);
+    Symbol currentSymbol = spx;
     ObservableList<Order> bidList = FXCollections.observableArrayList();
     ObservableList<Order> askList = FXCollections.observableArrayList();
     Stage window;
@@ -30,7 +32,7 @@ public class HelloFX extends Application {
     TextField priceInput, quantityInput;
 
     StringProperty underlierProperty = new SimpleStringProperty(currentSymbol.underlier);
-    DoubleProperty bestPriceProperty = new SimpleDoubleProperty(currentSymbol.asks.bestPrice);
+    DoubleProperty bestPriceProperty = new SimpleDoubleProperty(currentSymbol.lastTradePrice);
 
     ObservableList<Order> completedOrders = FXCollections.observableArrayList(currentSymbol.bids.completedOrders);
 
@@ -112,6 +114,9 @@ public class HelloFX extends Application {
 
         HBox bestPriceBox = new HBox(underlier, atLabel, bestPrice);
 
+        Button switchUnderliersButton = new Button("Switch Underlier");
+        switchUnderliersButton.setOnAction(e -> switchUnderliersButtonClicked());
+
         Button buyButton = new Button("Buy");
         buyButton.setOnAction(e -> buyButtonClicked());
         Button sellButton = new Button("Sell");
@@ -126,7 +131,7 @@ public class HelloFX extends Application {
         HBox topHeader = new HBox();
         topHeader.setPadding(new Insets(10, 10, 10, 10));
         topHeader.setSpacing(0);
-        topHeader.getChildren().addAll(bestPriceBox);
+        topHeader.getChildren().addAll(switchUnderliersButton, bestPriceBox);
         topHeader.setAlignment(Pos.CENTER);
 
         HBox bottomFooter = new HBox();
@@ -142,6 +147,7 @@ public class HelloFX extends Application {
         bidsTable.getColumns().add(QUANTITY_column);
         bidsTable.getColumns().add(ORIGINAL_QAUNTITY_column);
 
+        PRICE_column.setSortType(TableColumn.SortType.DESCENDING);
         bidsTable.getSortOrder().add(PRICE_column);
 
         completedOrdersTable = new TableView<>();
@@ -160,7 +166,6 @@ public class HelloFX extends Application {
         asksTable.getColumns().add(QUANTITY_column3);
         asksTable.getColumns().add(ORIGINAL_QAUNTITY_column3);
 
-        PRICE_column3.setSortType(TableColumn.SortType.DESCENDING);
         asksTable.getSortOrder().add(PRICE_column3);
 
         BorderPane layout = new BorderPane();
@@ -178,14 +183,18 @@ public class HelloFX extends Application {
         window.show();
     }
 
+    private void switchUnderliersButtonClicked() {
+        if (currentSymbol == spx) {
+            currentSymbol = mitk;
+        } else {
+            currentSymbol = spx;
+        }
+        updateUI();
+    }
+
     private void updateHeader() {
         underlierProperty.setValue(currentSymbol.underlier);
-
-        if (currentSymbol.asks.bestPrice == Double.MAX_VALUE) {
-            bestPriceProperty.setValue(0.0);
-        } else {
-            bestPriceProperty.setValue(currentSymbol.asks.bestPrice);
-        }
+        bestPriceProperty.setValue(currentSymbol.lastTradePrice);
     }
 
     private void updateTables() {
@@ -210,11 +219,15 @@ public class HelloFX extends Application {
 
         completedOrders.addAll(currentSymbol.bids.completedOrders);
         completedOrders.addAll(currentSymbol.asks.completedOrders);
+
+        bidsTable.sort();
+        asksTable.sort();
     }
 
     private void updateFooter() {
         priceInput.clear();
         quantityInput.clear();
+        priceInput.requestFocus();
     }
 
     private void updateUI() {
@@ -248,23 +261,35 @@ public class HelloFX extends Application {
     }
 
     private void buyMarketButtonClicked() {
-        double price = currentSymbol.asks.bestPrice;
+        double price = currentSymbol.lastTradePrice;
         long quantity = Long.parseLong(quantityInput.getText());
         Order newOrder = new Order(price, quantity);
         boolean fullyMatched = currentSymbol.asks.matchOrder(newOrder);
 
-        if (!fullyMatched) currentSymbol.bids.processOrder(newOrder);
+        if (!fullyMatched) {
+            currentSymbol.bids.processOrder(newOrder);
+        } else {
+            currentSymbol.updateLastTradePrice(currentSymbol.asks);
+            bestPriceProperty.setValue(currentSymbol.lastTradePrice);
+        }
 
         updateUI();
     }
 
     private void sellMarketButtonClicked() {
-        double price = currentSymbol.bids.bestPrice;
+        double price = currentSymbol.lastTradePrice;
         long quantity = Long.parseLong(quantityInput.getText());
         Order newOrder = new Order(price, quantity);
         boolean fullyMatched = currentSymbol.bids.matchOrder(newOrder);
 
-        if (!fullyMatched) currentSymbol.asks.processOrder(newOrder);
+        System.out.println(fullyMatched + " and at price: " + currentSymbol.bids.lastTradePrice);
+
+        if (!fullyMatched) {
+            currentSymbol.asks.processOrder(newOrder);
+        } else {
+            currentSymbol.updateLastTradePrice(currentSymbol.bids);
+            bestPriceProperty.setValue(currentSymbol.lastTradePrice);
+        }
 
         updateUI();
     }

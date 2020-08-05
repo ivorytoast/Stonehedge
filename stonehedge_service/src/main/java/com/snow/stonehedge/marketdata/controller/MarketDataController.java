@@ -24,14 +24,16 @@ public class MarketDataController {
     @GetMapping("/v1/realtime/{symbol}")
     @NonNull
     public Quote getSymbolQuote(@PathVariable String symbol) {
-        return Data.QUOTES.getOrDefault(symbol, new Quote("", new Book(BigDecimal.valueOf(3000.0).doubleValue())));
+//        return Data.QUOTES.getOrDefault(symbol, new Quote("", new Book(BigDecimal.valueOf(3000.0).doubleValue())));
+        return null;
     }
 
     @GetMapping("/v1/book/{symbol}/bids")
     @NonNull
     public TreeMap<Double, Map<Long, Order>> getBidsFor(@PathVariable String symbol) {
         if (Data.QUOTES.containsKey(symbol)) {
-            return Data.QUOTES.get(symbol).getBook().getBids();
+//            return Data.QUOTES.get(symbol).getBook().getBids();
+            return null;
         }
         return new TreeMap<>();
     }
@@ -40,7 +42,8 @@ public class MarketDataController {
     @NonNull
     public TreeMap<Double, Map<Long, Order>> getAsksFor(@PathVariable String symbol) {
         if (Data.QUOTES.containsKey(symbol)) {
-            return Data.QUOTES.get(symbol).getBook().getAsks();
+//            return Data.QUOTES.get(symbol).getBook().getAsks();
+            return null;
         }
         return new TreeMap<>();
     }
