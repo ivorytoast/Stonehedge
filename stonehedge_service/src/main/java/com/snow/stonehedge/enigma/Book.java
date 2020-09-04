@@ -9,21 +9,23 @@ public abstract class Book {
 
     public double bestPrice;
     public double amountAvailable;
+    private double startingBestPrice;
 
     public TreeMap<Double, Long> availablePerPrice;
     public Map<Double, List<Order>> ordersPerPrice;
     public List<Order> completedOrders;
 
-    public Book(BookType bookType) {
+    public Book(BookType bookType, double startingBestPrice) {
         this.bookType = bookType;
+        this.startingBestPrice = startingBestPrice;
         if (bookType == BookType.BID) {
-            this.bestPrice = 0.0;
+            this.bestPrice = startingBestPrice;
             this.availablePerPrice = new TreeMap<>(Collections.reverseOrder());
         } else {
-            this.bestPrice = Double.MAX_VALUE;
+            this.bestPrice = startingBestPrice;
             this.availablePerPrice = new TreeMap<>();
         }
-        this.amountAvailable = 0.0;
+        this.amountAvailable = startingBestPrice;
         this.ordersPerPrice = new HashMap<>();
         this.completedOrders = new ArrayList<>();
     }
@@ -65,6 +67,7 @@ public abstract class Book {
     public boolean matchOrder(Order incomingOrder) {
         List<Double> prices = findTheBestPricesToFillWith(incomingOrder);
         for (double price : prices) {
+            System.out.println("The prices that we are looking at -> " + Arrays.toString(prices.toArray()));
             Order existingOrder = ordersPerPrice.get(price).get(0);
             if (incomingOrder.quantity == 0) break;
             if (incomingOrder.quantity == existingOrder.quantity) {
@@ -133,7 +136,7 @@ public abstract class Book {
         } else {
             if (order.price < bestPrice) bestPrice = order.price;
         }
-
+        if (bestPrice == 0)  bestPrice = startingBestPrice;
     }
 
     private void updateBestPrice() {
@@ -153,6 +156,7 @@ public abstract class Book {
             }
         }
         bestPrice = bestBidPrice;
+        if (bestPrice == 0 || bestBidPrice == Double.MAX_VALUE || bestBidPrice == Double.MIN_VALUE)  bestPrice = startingBestPrice;
     }
 
 }

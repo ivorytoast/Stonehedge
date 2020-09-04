@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 public class HelloFX extends Application {
 
-    Symbol currentSymbol = new Symbol("spx");
+    Symbol currentSymbol = new Symbol("spx", 3500.0);
     ObservableList<Order> bidList = FXCollections.observableArrayList();
     ObservableList<Order> askList = FXCollections.observableArrayList();
     Stage window;

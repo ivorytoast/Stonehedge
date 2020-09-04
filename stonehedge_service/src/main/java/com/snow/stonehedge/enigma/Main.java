@@ -5,8 +5,8 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args) {
-        Book bids = new Bids();
-        Book asks = new Asks();
+        Book bids = new Bids(2300);
+        Book asks = new Asks(2300);
 
         Order order1 = new Order(11, 50);
         Order order2 = new Order(13, 100);
